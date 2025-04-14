@@ -1,0 +1,3 @@
+/home/rzz-rz/Learn_STL/memroyPool/build/CMakeFiles/main.dir
+/home/rzz-rz/Learn_STL/memroyPool/build/CMakeFiles/edit_cache.dir
+/home/rzz-rz/Learn_STL/memroyPool/build/CMakeFiles/rebuild_cache.dir

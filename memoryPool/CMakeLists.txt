@@ -9,4 +9,4 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-add_executable(main test.cpp)
+add_executable(main src/test.cpp)

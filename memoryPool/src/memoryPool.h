@@ -1,118 +1,135 @@
-// 使用的是linux Ubuntu 24 发行版对应的页的大小是4096B 
+#ifndef _MEMORYPOOL_H_
+#define _MEMORYPOOL_H_
+// 使用的是linux Ubuntu 24 发行版对应的页的大小是4096B
 // 首先获取不同系统下的页大小
 
 #include <cstddef>
 #include <new>
+
 #if defined(_WIN32) || defined(_WIN64)
-    #include <windows.h>
+#include <windows.h>
 #else
-    #include <unistd.h>
+#include <unistd.h>
 #endif // defined(_WIN32) || defined(_WIN64)
+
+#define THREAD_ON
+// THREADS_ON 多线程启动 和 包含 pthread.h的时候启动线程安全
+
+#if defined(THREAD_ON) && defined(_PTHREAD_H)
+#include <pthread.h>
+#define LOCK(mtx) pthread_mutex_lock(mtx)
+#define UNLOCK(mtx) pthread_mutex_unlock(mtx)
+
+#else
+#define LOCK(mtx)
+#define UNLOCK(mtx)
+#endif // defined(THREAD_ON)
 
 size_t get_page_size() {
   static size_t page_size = 0;
   if (page_size != 0)
     return page_size; // 曾经获取过页大小
-  
+
 #if defined(_WIN32) || defined(_WIN64)
   SYSTEM_INFO info;
   GetSystemInfo(&info);
-  page_size = info.dwPageSizel
+  page_size = info.dwPageSize;
 #else
   page_size = sysconf(_SC_PAGESIZE);
 #endif // defined(_WIN32) || defined(_WIN64)
-              
+
   return page_size;
 }
 
 #if defined(DOUBLE_ALLOCATOR_OFF) // 关闭二级内存分配器
-    #define DOUBLE_ALLOC_ON flase
+#define DOUBLE_ALLOC_ON flase
 #else
-    #define DOUBLE_ALLOC_ON true
+#define DOUBLE_ALLOC_ON true
 #endif // defined(DOUBLE_ALLOCATOR_OFF)
 
 
 
 // 实现编译时多个内存池
-//template <int uniqueID>
+template <int uniqueID>
 class my_malloc_allocator {
-  
+
   using custom_alloc_false_func = void (*)(); // 内存分配失败处理函数别名
-  
+
 public:
   // 首先初始化函数负责首次初始化内存池的初始内存块
   my_malloc_allocator() {
 #if DOUBLE_ALLOC_ON
-    page_szie = get_page_size();
-    memoryPoolPtr = static_cast<char *>(operator new(page_szie));
+    page_size = get_page_size();
+    memoryPoolPtr = static_cast<char *>(operator new(page_size));
     start_free = memoryPoolPtr;
-    end_free = start_free + page_szie;
-    heap_size = page_szie;
+    end_free = start_free + page_size;
+    heap_size = page_size;
 #endif // DOUBLE_ALLOC_ON
-    //alloc_false_func = defult_mem_malloc_false;
   }
 
   my_malloc_allocator(custom_alloc_false_func func) {
 #if DOUBLE_ALLOC_ON
-    page_szie = get_page_size();
-    memoryPoolPtr = static_cast<char *>(operator new(page_szie));
+    page_size = get_page_size();
+    memoryPoolPtr = static_cast<char *>(operator new(page_size));
     start_free = memoryPoolPtr;
-    end_free = start_free + page_szie;
-    heap_size = page_szie;
+    end_free = start_free + page_size;
+    heap_size = page_size;
 #endif // DOUBLE_ALLOC_ON
-    alloc_false_func = func;
   }
+
+  // 析构函数
+  ~my_malloc_allocator() { operator delete(memoryPoolPtr); }
 
   // 内存分配的接口
   static void *allocate(size_t n);
 
+  static void deallocate(void *p, size_t size);
   // 析构函数关闭内存池
 private:
   // 一级的内存分配直接封装new和free进行分配
   static void *big_mem_allocate(size_t n);
-  
+
   // 二级分配
 #if DOUBLE_ALLOC_ON // 关闭二级内存分配器
   class small_mem_allocator {
   public:
-    static void* small_mem_allocate(size_t n) {
+    static void *small_mem_allocate(size_t n) {
       // 找到对应的内存块
+      LOCK(&my_malloc_allocator::mtx);
       volatile obj *temp = free_list[FREELIST_INDEX(n)];
       if (temp == NULL) // 没有可以使用的空间了
       {
         void *r = refill(ROUND_UP(n));
+        UNLOCK(&my_malloc_allocator::mtx);
         return r;
       }
       volatile obj *result = temp;
       temp = result->free_list_link;
-      return (void*)result;
+      UNLOCK(&my_malloc_allocator::mtx);
+      return (void *)result;
     }
-    
   };
 
   // 查看内存池的内存是否还有没有 没挂载道free_list上的
   static void *refill(size_t n);
   static char *chunk_alloc(size_t n, int &obj);
 
-  // 默认的处理内存分配失败的函数
-  //
-  // 一个可变参数模板进行高度自定义
-  static void defult_mem_malloc_false();
 
   // 向上取整的函数
   static size_t ROUND_UP(size_t n) {
     return (((n + ALIGN - 1) / ALIGN) * ALIGN);
   }
 
-  static size_t FREELIST_INDEX(size_t bytes) { return ((bytes + ALIGN - 1) / ALIGN -1); }
-#else
+  static size_t FREELIST_INDEX(size_t bytes) {
+    return ((bytes + ALIGN - 1) / ALIGN - 1);
+  }
 
 #endif // not defined(__DOUBLE_ALLOCATOR_OFF)
 
 #if DOUBLE_ALLOC_ON
   enum { ALIGN = 8 };
   enum { MAX_BYTES = 4096 };
-  enum { FREELIST_SIZE = MAX_BYTES / MAX_BYTES };
+  enum { FREELIST_SIZE = MAX_BYTES / ALIGN };
 
   union obj {
     union obj *free_list_link;
@@ -122,28 +139,43 @@ private:
   // 这是一个数组
   static volatile obj *free_list[FREELIST_SIZE];
 
-  static size_t heap_size;// 当前管理的堆内存总量
+  static size_t heap_size; // 当前管理的堆内存总量
 
-  size_t page_szie;
+  static size_t page_size;
   char *memoryPoolPtr;
 
   static char *start_free;
   static char *end_free;
-#endif // DOUBLE_ALLOC_ON
 
-  custom_alloc_false_func alloc_false_func;
+  // 对于 多线程模式可能修改的变量是free_list,heap_szie,start_free,end_free
+  // 所以在修改变量的时候要加上互斥锁
+#if defined(THREAD_ON) && defined(_PTHREAD_H)
+  static pthread_mutex_t mtx;
+#endif // defined(THREAD_ON) && defined(_PTHREAD_H)
+#endif // DOUBLE_ALLOC_ON
 };
 
+
 #if DOUBLE_ALLOC_ON
-size_t my_malloc_allocator::heap_size;
+template <int uniqueID> size_t my_malloc_allocator<uniqueID>::heap_size;
+template <int uniqueID> size_t my_malloc_allocator<uniqueID>::page_size;
 
-char *my_malloc_allocator::start_free;
-char *my_malloc_allocator::end_free;
+template <int uniqueID> char *my_malloc_allocator<uniqueID>::start_free;
+template <int uniqueID> char *my_malloc_allocator<uniqueID>::end_free;
 
-volatile my_malloc_allocator::obj *my_malloc_allocator::free_list[FREELIST_SIZE];
+#if defined(THREAD_ON) && defined(_PTHREAD_H)
+
+template <int uniqueID>
+pthread_mutex_t my_malloc_allocator<uniqueID>::mtx = PTHREAD_MUTEX_INITIALIZER;
+#endif // defined(THREAD_ON) && defined(_PTHREAD_H)
+
+template <int uniqueID>
+volatile typename my_malloc_allocator<uniqueID>::obj
+    *my_malloc_allocator<uniqueID>::free_list[FREELIST_SIZE];
 #endif // DOUBLE_ALLOC_ON
 
-void *my_malloc_allocator::allocate(size_t n) {
+template <int uniqueID>
+void *my_malloc_allocator<uniqueID>::allocate(size_t n) {
 #if DOUBLE_ALLOC_ON
   if (n > MAX_BYTES)
     return big_mem_allocate(n);
@@ -153,19 +185,39 @@ void *my_malloc_allocator::allocate(size_t n) {
   return big_mem_allocate(n);
 }
 
+template <int uniqueID>
+void my_malloc_allocator<uniqueID>::deallocate(void *p, size_t size) {
+  if (p == nullptr)
+    return;
+#if DOUBLE_ALLOC_ON
+  size = ROUND_UP(size);
+  if (size <= MAX_BYTES) {
+    LOCK(&my_malloc_allocator::mtx);
+    volatile obj *my_free_list = free_list[FREELIST_INDEX(size)];
+    ((obj *)p)->free_list_link = (obj *)my_free_list;
+    my_free_list = (obj *)p;
+    UNLOCK(&my_malloc_allocator::mtx);
+    p = nullptr;
+    return;
+  }
+#endif // DOUBLE_ALLOC_ON
+  operator delete(p);
+  p = nullptr;
+  return;
+}
 
-void *my_malloc_allocator::big_mem_allocate(size_t n) {
+template <int uniqueID>
+void *my_malloc_allocator<uniqueID>::big_mem_allocate(size_t n) {
   void *temp = operator new(n);
   if (!temp) // 申请失败
   {
-    //alloc_false_func();
+    // alloc_false_func();
     return nullptr;
   }
   return temp;
 }
 
-
-void *my_malloc_allocator::refill(size_t n) {
+template <int uniqueID> void *my_malloc_allocator<uniqueID>::refill(size_t n) {
   int nobj = 20;
   char *chunk = chunk_alloc(n, nobj); // 通过引用nobj返回能够返回的n大小的空间
   volatile obj **my_free_list = free_list + FREELIST_INDEX(n); // 挂载点
@@ -177,7 +229,7 @@ void *my_malloc_allocator::refill(size_t n) {
 
   // 不进行头插 为了保证以后一个指向null
   for (int i = 0; i <= nobj - 1; i++) {
-    ((obj *)(chunk + i * n))->free_list_link = (obj *)(chunk + (i+1) * n);
+    ((obj *)(chunk + i * n))->free_list_link = (obj *)(chunk + (i + 1) * n);
     if (i == nobj - 1)
       ((obj *)(chunk + i * n))->free_list_link = NULL;
   }
@@ -191,8 +243,8 @@ void *my_malloc_allocator::refill(size_t n) {
   // 之后从挂载的剩余空间中返回一个空间
 }
 
-
-char *my_malloc_allocator::chunk_alloc(size_t n, int &nobj) {
+template <int uniqueID>
+char *my_malloc_allocator<uniqueID>::chunk_alloc(size_t n, int &nobj) {
   // 这个函数是专门用来返回内存池chunk的
 
   char *result;
@@ -238,34 +290,5 @@ char *my_malloc_allocator::chunk_alloc(size_t n, int &nobj) {
     return chunk_alloc(n, nobj);
   }
 }
-template<int uniqueID>
-void defult_mem_malloc_false() {
-  
-};
 
-#include<iostream>
-
-int main() {
-
-  my_malloc_allocator allocator;
-  //int *num = (int *)allocator.allocate(4096);
-
-  // for (int i = 0; i < 1024; i++) {
-  //   num[i] = i + 1;
-  //   std::cout << num[i]<<' ';
-  // }
-  // std::cout<<std::endl;
-  // std::cout << " allocate agin ";
-
-  //double * dnum= (double *)allocator.allocate(8);
-  //if(dnum) = 0.001;
-  // //std::cout << *dnum;
-  // std::cout << std::endl;
-
-  // for (int i = 0; i < 1024; i++) {
-  //   num[i] = i + 1;
-  //   std::cout << num[i] << ' ';
-  // }
-  // std::cout<<std::endl;
-  return 0;
-  }
+#endif // _MEMORYPOOL_H_

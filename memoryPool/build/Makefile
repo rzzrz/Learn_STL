@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/rzz-rz/Learn_STL/memroyPool
+CMAKE_SOURCE_DIR = /home/rzz-rz/Learn_STL/memoryPool
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/rzz-rz/Learn_STL/memroyPool/build
+CMAKE_BINARY_DIR = /home/rzz-rz/Learn_STL/memoryPool/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rzz-rz/Learn_STL/memroyPool/build/CMakeFiles /home/rzz-rz/Learn_STL/memroyPool/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/rzz-rz/Learn_STL/memoryPool/build/CMakeFiles /home/rzz-rz/Learn_STL/memoryPool/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rzz-rz/Learn_STL/memroyPool/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/rzz-rz/Learn_STL/memoryPool/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -129,6 +129,43 @@ main/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
 .PHONY : main/fast
 
+#=============================================================================
+# Target rules for targets named test_shared_ptr_with_pool
+
+# Build rule for target.
+test_shared_ptr_with_pool: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_shared_ptr_with_pool
+.PHONY : test_shared_ptr_with_pool
+
+# fast build rule for target.
+test_shared_ptr_with_pool/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_shared_ptr_with_pool.dir/build.make CMakeFiles/test_shared_ptr_with_pool.dir/build
+.PHONY : test_shared_ptr_with_pool/fast
+
+src/shared_ptr_test.o: src/shared_ptr_test.cpp.o
+.PHONY : src/shared_ptr_test.o
+
+# target to build an object file
+src/shared_ptr_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_shared_ptr_with_pool.dir/build.make CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.o
+.PHONY : src/shared_ptr_test.cpp.o
+
+src/shared_ptr_test.i: src/shared_ptr_test.cpp.i
+.PHONY : src/shared_ptr_test.i
+
+# target to preprocess a source file
+src/shared_ptr_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_shared_ptr_with_pool.dir/build.make CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.i
+.PHONY : src/shared_ptr_test.cpp.i
+
+src/shared_ptr_test.s: src/shared_ptr_test.cpp.s
+.PHONY : src/shared_ptr_test.s
+
+# target to generate assembly for a file
+src/shared_ptr_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_shared_ptr_with_pool.dir/build.make CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.s
+.PHONY : src/shared_ptr_test.cpp.s
+
 src/test.o: src/test.cpp.o
 .PHONY : src/test.o
 
@@ -162,6 +199,10 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... main"
+	@echo "... test_shared_ptr_with_pool"
+	@echo "... src/shared_ptr_test.o"
+	@echo "... src/shared_ptr_test.i"
+	@echo "... src/shared_ptr_test.s"
 	@echo "... src/test.o"
 	@echo "... src/test.i"
 	@echo "... src/test.s"

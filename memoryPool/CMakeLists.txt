@@ -10,3 +10,4 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 add_executable(main src/test.cpp)
+add_executable(test_shared_ptr_with_pool src/shared_ptr_test.cpp)

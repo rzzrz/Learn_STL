@@ -1,4 +1,4 @@
-# Install script for directory: /home/rzz-rz/Learn_STL/memroyPool
+# Install script for directory: /home/rzz-rz/Learn_STL/memoryPool
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/rzz-rz/Learn_STL/memroyPool/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/rzz-rz/Learn_STL/memoryPool/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

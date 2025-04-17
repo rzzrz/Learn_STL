@@ -4,6 +4,7 @@
 // 首先获取不同系统下的页大小
 
 #include <cstddef>
+#include <memory>
 #include <new>
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -47,11 +48,8 @@ size_t get_page_size() {
 #define DOUBLE_ALLOC_ON true
 #endif // defined(DOUBLE_ALLOCATOR_OFF)
 
-
-
 // 实现编译时多个内存池
-template <int uniqueID>
-class my_malloc_allocator {
+template <int uniqueID> class my_malloc_allocator {
 
   using custom_alloc_false_func = void (*)(); // 内存分配失败处理函数别名
 
@@ -83,11 +81,22 @@ public:
   // 内存分配的接口
   static void *allocate(size_t n);
 
+  // 内存释放接口
   static void deallocate(void *p, size_t size);
+
+  // 使用内存池创建智能指针
+  template <typename T> static std::shared_ptr<T> make_shared_with_pool();
+  template <typename T, typename... Args>
+  static std::shared_ptr<T> make_shared_with_pool(Args... args);
+
+  template <typename T,size_t N>
+  static std::shared_ptr<T> make_shared_with_pool();
   // 析构函数关闭内存池
-private:
+
+  private :
   // 一级的内存分配直接封装new和free进行分配
-  static void *big_mem_allocate(size_t n);
+  static void *
+  big_mem_allocate(size_t n);
 
   // 二级分配
 #if DOUBLE_ALLOC_ON // 关闭二级内存分配器
@@ -113,7 +122,6 @@ private:
   // 查看内存池的内存是否还有没有 没挂载道free_list上的
   static void *refill(size_t n);
   static char *chunk_alloc(size_t n, int &obj);
-
 
   // 向上取整的函数
   static size_t ROUND_UP(size_t n) {
@@ -154,7 +162,6 @@ private:
 #endif // defined(THREAD_ON) && defined(_PTHREAD_H)
 #endif // DOUBLE_ALLOC_ON
 };
-
 
 #if DOUBLE_ALLOC_ON
 template <int uniqueID> size_t my_malloc_allocator<uniqueID>::heap_size;
@@ -206,6 +213,30 @@ void my_malloc_allocator<uniqueID>::deallocate(void *p, size_t size) {
   return;
 }
 
+// 无参构造智能指针
+template <int uniqueID>
+template <typename T>
+std::shared_ptr<T> my_malloc_allocator<uniqueID>::make_shared_with_pool() {
+  T *ptmp = (T *)my_malloc_allocator<uniqueID>::allocate(sizeof(T));
+  //new(ptmp) T();
+  return std::shared_ptr<T>(ptmp, [](T *ptr) {
+    //ptr->~T();
+    my_malloc_allocator<uniqueID>::deallocate((void *)ptr, sizeof(T));
+  });
+}
+
+template <int uniqueID>
+template <typename T, typename... Args>
+std::shared_ptr<T>
+my_malloc_allocator<uniqueID>::make_shared_with_pool(Args... args) {
+  T *ptmp = (T *)my_malloc_allocator<uniqueID>::allocate(sizeof(T));
+  new(ptmp) T(args...);
+  return std::shared_ptr<T>(ptmp, [](T* ptr) {
+    ptr->~T();
+    my_malloc_allocator<uniqueID>::deallocate((void *)ptr, sizeof(T));
+  });
+}
+
 template <int uniqueID>
 void *my_malloc_allocator<uniqueID>::big_mem_allocate(size_t n) {
   void *temp = operator new(n);
@@ -215,6 +246,15 @@ void *my_malloc_allocator<uniqueID>::big_mem_allocate(size_t n) {
     return nullptr;
   }
   return temp;
+}
+template <int uniqueID>
+template <typename T, size_t N>
+std::shared_ptr<T> my_malloc_allocator<uniqueID>::make_shared_with_pool() {
+  size_t size = N;
+  T *ptmp = (T *)my_malloc_allocator<uniqueID>::allocate(sizeof(T) * size);
+  return std::shared_ptr<T>(ptmp, [size](T *ptr) {
+    my_malloc_allocator<uniqueID>::deallocate((void*)ptr, sizeof(T) * size);
+  });
 }
 
 template <int uniqueID> void *my_malloc_allocator<uniqueID>::refill(size_t n) {

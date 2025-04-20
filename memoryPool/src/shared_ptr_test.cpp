@@ -32,6 +32,7 @@ int main() {
   for (int i = 0; i < 10; i++)
     std::cout << (*vec)[i] << std::endl;
 
+  // 数组类型的申请
   std::shared_ptr<int> parr = allocator.make_shared_with_pool<int,10>();
   for (int i = 0; i < 10; i++) {
     parr.get()[i] = i + 1;

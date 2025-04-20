@@ -230,7 +230,7 @@ template <typename T, typename... Args>
 std::shared_ptr<T>
 my_malloc_allocator<uniqueID>::make_shared_with_pool(Args... args) {
   T *ptmp = (T *)my_malloc_allocator<uniqueID>::allocate(sizeof(T));
-  new(ptmp) T(args...);
+  new(ptmp) T(std::forward<Args>(args)...);
   return std::shared_ptr<T>(ptmp, [](T* ptr) {
     ptr->~T();
     my_malloc_allocator<uniqueID>::deallocate((void *)ptr, sizeof(T));

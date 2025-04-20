@@ -22,3 +22,6 @@ volatile typename my_malloc_allocator<uniqueID>::obj* my_malloc_allocator<unique
 展开
 ```
 ### ```typename```关键词必须告诉编译器后面的这个my_malloc_allocator<uniqueID>::obj*是一个类型
+
+
+## 内存复制函数要从后往前拷贝 能够解决拷贝区间重合的问题

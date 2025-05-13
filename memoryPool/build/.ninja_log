@@ -1,6 +1,0 @@
-# ninja log v5
-4	12	0	clean	a31eedcededa8236
-1	689	1745162917056868574	CMakeFiles/main.dir/src/test.cpp.o	f363ab8cada4a78e
-690	792	1745162917166868574	main	1672e4da992dcbda
-1	934	1745162917304368573	CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.o	64514cf7ed1e9113
-934	1010	1745162917377701907	test_shared_ptr_with_pool	c04fb9b109345c9e

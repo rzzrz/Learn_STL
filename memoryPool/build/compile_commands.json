@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/home/rzz-rz/Learn_STL/memoryPool/build",
+  "command": "/usr/bin/c++ -g -std=gnu++11 -o CMakeFiles/main.dir/src/test.cpp.o -c /home/rzz-rz/Learn_STL/memoryPool/src/test.cpp",
+  "file": "/home/rzz-rz/Learn_STL/memoryPool/src/test.cpp",
+  "output": "CMakeFiles/main.dir/src/test.cpp.o"
+},
+{
+  "directory": "/home/rzz-rz/Learn_STL/memoryPool/build",
+  "command": "/usr/bin/c++ -g -std=gnu++11 -o CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.o -c /home/rzz-rz/Learn_STL/memoryPool/src/shared_ptr_test.cpp",
+  "file": "/home/rzz-rz/Learn_STL/memoryPool/src/shared_ptr_test.cpp",
+  "output": "CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.o"
+}
+]

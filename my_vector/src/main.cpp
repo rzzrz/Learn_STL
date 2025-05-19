@@ -21,7 +21,10 @@ int main() {
   m_vector<int> vec(10, 1);
   for (int i = 0; i < 10; i++)
     std::cout << vec[i];
+  std::cout<<std::endl;
 
+  vec.insert(vec.begin(), 1);
+  std::cout<<vec.size();
   std::cout << "--------------------------------" << std::endl;
 
   m_vector<test_class> vec_class(1, std::move(test_class()));

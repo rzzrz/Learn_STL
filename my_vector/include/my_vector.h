@@ -5,6 +5,8 @@
 #include "./uninitial.h"
 #include <csignal>
 #include <cstddef>
+#include <stdexcept>
+#include <utility>
 
 template <typename T, typename Default_alloctor = my_malloc_allocator<0>>
 class m_vector {
@@ -20,10 +22,10 @@ public:
   using difference_type = ptrdiff_t;
 
   // 申请空间并填充空间
-  iterator allocate_and_fill(std::size_t n, const value_type& value);
+  iterator allocate_and_fill(std::size_t n, const value_type &value);
 
   // 统一初始化函数
-  void init(std::size_t n, const value_type& value) {
+  void init(std::size_t n, const value_type &value) {
     start = allocate_and_fill(n, value);
     finish = start + n;
     end_of_storage = finish;
@@ -35,17 +37,17 @@ public:
   m_vector(size_t n, const value_type &value) : allocator() { init(n, value); }
 
   // 重写拷贝运算符（深拷贝）
-  m_vector<T>& operator=(const value_type &other) {
+  m_vector<T> &operator=(const value_type &other) {
     if (this != &other) {
-      this->allocator      = other.allocator;
-      this->start          = other.start;
-      this->finish         = other.finish;
+      this->allocator = other.allocator;
+      this->start = other.start;
+      this->finish = other.finish;
       this->end_of_storage = other.end_of_storage;
     }
     return *this;
   }
   // 移动拷贝构造
-  m_vector<T>& operator=(const value_type &&other) {
+  m_vector<T> &operator=(const value_type &&other) {
     if (this != &other) {
       this->allocator = other.allocator;
       this->start = other.start;
@@ -56,11 +58,11 @@ public:
     return *this;
   }
 
-  // 重载运算
+  // 重载运算符
   reference operator[](size_t n) { return start[n]; }
 
   // 基础功能函数
-  difference_type size() { return difference_type(start - finish); }
+  difference_type size() { return difference_type(finish - start); }
   difference_type capacity() { return difference_type(end_of_storage - start); }
 
   iterator begin() { return start; }
@@ -68,11 +70,27 @@ public:
   iterator end() { return end_of_storage; }
   const_iterator end() const { return end_of_storage; }
 
-
   void push_back(const value_type &value);
   iterator insert(iterator pos, const_reference value);
 
-  
+  template <typename... Args> void emplace_back(Args... args);
+
+  reference at(size_t i) {
+    if (i <= (finish - start)) {
+      return *(start + i);
+    } else {
+      throw std::out_of_range("");
+    }
+  }
+
+  const_reference at(size_t i) const {
+    if (i <= (finish - start)) {
+      return *(start + i);
+    } else {
+      throw std::out_of_range("");
+    }
+  }
+
   // 析构函数
   ~m_vector() {
     if (start != nullptr) {
@@ -91,8 +109,6 @@ protected:
 
   void copy(iterator src_begin, iterator src_end, iterator des_begin,
             iterator des_end);
-  
-  
 
 private:
   Default_alloctor allocator;
@@ -102,7 +118,7 @@ private:
 };
 
 template <typename T, typename Default_alloctor>
-typename m_vector<T,Default_alloctor>::iterator
+typename m_vector<T, Default_alloctor>::iterator
 m_vector<T, Default_alloctor>::allocate_and_fill(std::size_t n,
                                                  const value_type &value) {
   iterator result =
@@ -117,7 +133,7 @@ m_vector<T, Default_alloctor>::allocate_and_fill(std::size_t n,
 }
 
 template <typename T, typename Default_alloctor>
-void m_vector<T,Default_alloctor>::extend_capacity(const value_type &value) {
+void m_vector<T, Default_alloctor>::extend_capacity(const value_type &value) {
   // 申请新空间
   std::size_t new_size =
       (end_of_storage - start) != 0 ? (end_of_storage - start) * 2 : 10;
@@ -171,7 +187,7 @@ void m_vector<T, Default_alloctor>::extend_capacity() {
 }
 
 template <typename T, typename Default_alloctor>
-void m_vector<T,Default_alloctor>::push_back(const value_type &value) {
+void m_vector<T, Default_alloctor>::push_back(const value_type &value) {
   if (finish != end_of_storage) {
     uninit<iterator, value_type>(finish, 1, value);
   } else {
@@ -180,17 +196,26 @@ void m_vector<T,Default_alloctor>::push_back(const value_type &value) {
 }
 template <typename T, typename Default_alloctor>
 typename m_vector<T, Default_alloctor>::iterator
-    m_vector<T, Default_alloctor>::insert(iterator pos,const_reference value) {
+m_vector<T, Default_alloctor>::insert(iterator pos, const_reference value) {
   // 满了
   if (finish == end_of_storage) {
     difference_type n = pos - start;
     extend_capacity();
     pos = start + n;
   }
-  copy(pos, finish,
-       pos + 1,finish + 1);
-  new(pos) value_type(value);
+  copy(pos, finish, pos + 1, finish + 1);
+  new (pos) value_type(value);
   return pos;
+}
+
+template <typename T, typename Default_alloctor>
+template <typename... Args>
+void m_vector<T, Default_alloctor>::emplace_back(Args... args) {
+  if (finish != end_of_storage) {
+    construct_at(finish++,std::forward<Args>(args)...);
+  } else {
+    emplace_back(std::forward<Args>(args)...);
+  }
 }
 
 template <typename T, typename Default_alloctor>

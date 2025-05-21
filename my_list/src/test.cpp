@@ -1,7 +1,8 @@
-#include <list>
-
+#include "../include/my_list.h"
+#include <iostream>
 int main() {
-  std::list<int> l;
-  std::list<int>::iterator it = l.begin();
-  l.
+  m_stl::list<int> list;
+  list.emplace_back(1);
+  std::cout << *list.begin();
+  list.pop_back();
 }

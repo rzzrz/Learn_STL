@@ -1,0 +1,5 @@
+Log file created at: 2025/05/22 15:49:24
+Running on machine: rzzrz
+Running duration (h:mm:ss): 0:00:00
+Log line format: [IWEF]yyyymmdd hh:mm:ss.uuuuuu threadid file:line] msg
+I20250522 15:49:24.644516 140097872723520 test.cpp:10] 无参构造函数成功

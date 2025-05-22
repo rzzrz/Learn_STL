@@ -1,10 +1,15 @@
 #ifndef _MY_LIST_H_
 #define _MY_LIST_H_
 
+#include <glog/logging.h>
+
 #include "./iterator_type.h"
 #include "./memoryPool.h"
+
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
+#include <initializer_list>
 #include <type_traits>
 #include <utility>
 
@@ -22,13 +27,13 @@ public:
     list_type prev;
     value_type value;
 
-    list_node() : next(this), prev(this) {}
-    list_node(list_type next, list_type prev) : next(next), prev(prev) {}
+    list_node() : next(this), prev(this), value() {}
+    list_node(list_type next, list_type prev)
+        : next(next), prev(prev), value() {}
     list_node(list_type next, list_type prev, const value_type &value)
         : next(next), prev(prev), value(value) {}
     list_node(list_type next, list_type prev, value_type &&value)
-        : next(next), prev(prev) {
-      this->value = std::move(value);
+        : next(next), prev(prev), value(std::move(value)) {
     }
   };
 
@@ -43,13 +48,17 @@ public:
     using self = iterator;
 
     friend class list;
+
   public:
     // 普通构造函数
     iterator(list_node *node) { now_node = node; }
     // 拷贝构造函数
-    iterator(self &other) { now_node = other.now_node; }
+    iterator(const self &other) { now_node = other.now_node; }
     // 移动构造
-    iterator(self &&other) { now_node = other.now_node; }
+    iterator(self &&other) {
+      now_node = other.now_node;
+      other.now_node = nullptr;
+    }
 
     // 重载运算符
     self &operator++() {
@@ -64,7 +73,7 @@ public:
 
     self &operator--() {
       now_node = now_node->prev;
-      return *this;
+      return *this; 
     }
     self operator--(int) {
       self tmp = *this;
@@ -82,17 +91,10 @@ public:
       return this->now_node != other.now_node;
     }
 
-    self operator+(int n) {
+    self operator+(size_t n) {
       self tmp = *this;
-      for (int i = 0; i < n; i++)
-        tmp++;
-      return tmp;
-    }
-
-    self operator-(int n) {
-      self tmp = *this;
-      for (int i = 0; i < n; i++)
-        tmp--;
+      for (size_t i = 0; i < n; ++i)
+        ++tmp;
       return tmp;
     }
 
@@ -124,7 +126,7 @@ public:
     // 普通构造函数
     reverse_iterator(list_node *node) { now_node = node; }
     // 拷贝构造函数
-    reverse_iterator(self &other) { now_node = other.now_node; }
+    reverse_iterator(const self &other) { now_node = other.now_node; }
     // 移动构造
     reverse_iterator(self &&other) { now_node = other.now_node; }
 
@@ -152,24 +154,17 @@ public:
     value_type &operator*() { return now_node->value; }
     value_type *operator->() { return &now_node->value; }
 
-    bool operator==(const iterator &other) const {
+    bool operator==(const self &other) const {
       return this->now_node == other.now_node;
     }
-    bool operator!=(const iterator &other) const {
+    bool operator!=(const self &other) const {
       return this->now_node != other.now_node;
     }
 
-    self operator+(int n) {
+    self &operator+(size_t n) {
       self tmp = *this;
-      for (int i = 0; i < n; i++)
-        tmp++;
-      return tmp;
-    }
-
-    self operator-(int n) {
-      self tmp = *this;
-      for (int i = 0; i < n; i++)
-        tmp--;
+      for (size_t i = 0; i < n; ++i)
+        ++tmp;
       return tmp;
     }
 
@@ -190,6 +185,7 @@ public:
   // 别名定义
   using value_type = T;
   using iterator = list::iterator;
+  using reverse_iterator = list::reverse_iterator;
   using list_head = list_node;
 
 public:
@@ -203,22 +199,77 @@ public:
     allocate_and_fill_value(head, n, value);
   }
   // 拷贝构造
-  list(const list &other);
+  list(list &other) : head(), allocator(), _size(0) {
+    iterator other_it = other.begin();
+    for (int i = 0; i < other._size; i++) {
+      list_node *tmp = construct(*other_it);
+      insert(tmp);
+      other_it++;
+      _size++;
+    }
+  }
+  // 初始化列表构造函数
+  list(std::initializer_list<T> init) : head(), allocator(), _size(0) {
+    // 初始化哨兵节点
+    head.next = &head;
+    head.prev = &head;
+    // 遍历初始化列表，逐个构造节点并插入
+    for (const T &value : init) {
+      list_node *new_node = construct(value);
+      insert(new_node);
+      _size++;
+    }
+  }
   // 移动拷贝构造
-  list(list &&other);
+  list(list &&other) : head(), allocator(), _size(other._size) {
+    if (other.head.next != &other.head) {
+      head.next = other.head.next;
+      head.prev = other.head.prev;
+      head.next->prev = &head;
+      head.prev->next = &head;
+    }
+    other.head.next = &other.head;
+    other.head.prev = &other.head;
+    other._size = 0;
+  }
 
   // 拷贝赋值
-  list &operator=(const list &other);
+  list &operator=(list &other) {
+    if (this != &other) {
+      clear();
+      for (iterator it = other.begin(); it != other.end(); ++it) {
+        list_node *new_node = construct(*it); // 通过值构造新节点
+        insert(new_node);
+        _size++;
+      }
+    }
+    return *this;
+  }
   // 移动拷贝赋值
-  list &operator=(list &&other);
+  list &operator=(list &&other) {
+    if (this != &other) {
+      clear();
+      head.next = other.head.next;
+      head.prev = other.head.prev;
+
+      if (other.head.next != &other.head) {
+        head.next->prev = &head; // 更新节点指向
+        head.prev->next = &head;
+      }
+
+      other.head.next = other.head.prev = &other.head; // 重置对方
+      other._size = 0;
+    }
+    return *this;
+  }
 
   // 其他功能函数
   size_t size() { return _size; }
   void push_back(const value_type &);
   void push_front(const value_type &);
 
-  template <typename... Args> void emplace_back(Args&&... args);
-  template <typename... Args> void emplace_front(Args&&... args);
+  template <typename... Args> void emplace_back(Args &&...args);
+  template <typename... Args> void emplace_front(Args &&...args);
 
   void pop_back();
   void pop_front();
@@ -227,32 +278,33 @@ public:
 
   void clear();
   void resize(size_t n);
+  void resize(size_t n, const value_type &);
 
   iterator begin() { return iterator(head.next); }
   const iterator cbegin() const { return iterator(head.next); }
-  iterator end() { return iterator(head); }
-  const iterator cend() const { return iterator(head); }
+  iterator end() { return iterator(&head); }
+  const iterator cend() const { return iterator(&head); }
 
   reverse_iterator rbegin() { return reverse_iterator(head.prev); }
   const reverse_iterator crbegin() const { return reverse_iterator(head.prev); }
-  reverse_iterator rend() { return reverse_iterator(head); }
-  const reverse_iterator crend() const { return reverse_iterator(head); }
+  reverse_iterator rend() { return reverse_iterator(&head); }
+  const reverse_iterator crend() const { return reverse_iterator(&head); }
 
   value_type &front() {
     assert(!empty());
-    return head.next->value;
+    return *begin();
   }
-  const value_type& front() const {
+  const value_type &front() const {
     assert(!empty());
-    return head.next->value;
+    return *begin();
   }
   value_type &back() {
     assert(!empty());
-    return head.prev->value;
+    return *(--end());
   }
-  const value_type& back() const {
+  const value_type &back() const {
     assert(!empty());
-    return head.prev->value;
+    return *(--end());
   }
 
   bool empty() const { return head.next == &head; }
@@ -265,45 +317,48 @@ protected:
   void allocate_and_fill_value(list_head head, size_t n,
                                const value_type &value);
   list_node *construct(const value_type &value);
-  template <typename... Args> list_node *construct_in_palce(Args... args);
+  template <typename... Args> list_node *construct_in_place(Args... args);
   void deconstruct(list_node *);
+  void insert(list_node *);
 
 private:
   list_head head;
   Default_allocator allocator;
-  int _size;
+  size_t _size;
 };
 
 template <typename T, typename Default_allocator>
 void list<T, Default_allocator>::push_back(const value_type &tmp) {
-  list_node *new_node = construct(tmp);
-  // 注意哨兵node在最后那么我们要push_back的话就要使用头插
-  (*static_cast<list_node *>(head.prev)).next = new_node;
-  new_node->prev = head.prev;
 
-  new_node->next = &head;
-  head.prev = new_node;
-  this->_size++;
+  list_node *new_node = construct(tmp);
+  try {
+    insert(new_node);
+    _size++;
+  } catch (...) {
+    deconstruct(new_node);
+    throw;
+  }
 }
 
 template <typename T, typename Default_allocator>
 void list<T, Default_allocator>::push_front(const value_type &tmp) {
   list_node *new_node = construct(tmp);
 
-  // 插入到哨兵node后面
-  (*static_cast<list_node *>(head.next)).prev = new_node;
   new_node->next = head.next;
-
   new_node->prev = &head;
+
+  // 插入到哨兵node后面
+  head.next->prev = new_node;
   head.next = new_node;
+
   this->_size++;
 }
 
 template <typename T, typename Default_allocator>
 template <typename... Args>
-void list<T, Default_allocator>::emplace_back(Args&&... args) {
+void list<T, Default_allocator>::emplace_back(Args &&...args) {
 
-  list_node *new_node = construct_in_palce(std::forward<Args>(args)...);
+  list_node *new_node = construct_in_place(std::forward<Args>(args)...);
   (*static_cast<list_node *>(head.prev)).next = new_node;
   new_node->prev = head.prev;
 
@@ -314,8 +369,8 @@ void list<T, Default_allocator>::emplace_back(Args&&... args) {
 
 template <typename T, typename Default_allocator>
 template <typename... Args>
-void list<T, Default_allocator>::emplace_front(Args&&... args) {
-  list_node *new_node = construct_in_palce(std::forward<Args>(args)...);
+void list<T, Default_allocator>::emplace_front(Args &&...args) {
+  list_node *new_node = construct_in_place(std::forward<Args>(args)...);
   (*static_cast<list_node *>(head.next)).prev = new_node;
   new_node->next = head.next;
 
@@ -345,7 +400,7 @@ void list<T, Default_allocator>::pop_front() {
 template <typename T, typename Default_allocator>
 typename list<T, Default_allocator>::iterator
 list<T, Default_allocator>::erase(iterator pos) {
-  list_node *tmp = pos.new_node;
+  list_node *tmp = pos.now_node;
   tmp->prev->next = tmp->next;
   tmp->next->prev = tmp->prev;
   iterator ret(tmp->next);
@@ -358,24 +413,38 @@ typename list<T, Default_allocator>::iterator
 list<T, Default_allocator>::erase(iterator first, iterator last) {
   while (first != last) {
     first = erase(first);
-    this->_size--;
   }
   return last;
 }
 template <typename T, typename Default_allocator>
 void list<T, Default_allocator>::clear() {
-  iterator first = this->begin();
-  iterator last = this->end();
-  while (first != last) {
-    first = erase(first);
+  while (!empty()) {
+    erase(begin());
   }
   this->_size = 0;
 }
 template <typename T, typename Default_allocator>
 void list<T, Default_allocator>::resize(size_t n) {
+  if (n < _size) {
+    iterator it = begin();
+    for (size_t i = 0; i < n; ++i)
+      ++it;
+    erase(it, end()); // 删除从第n个节点到末尾
+  }
+}
+
+template <typename T, typename Default_allocator>
+void list<T, Default_allocator>::resize(size_t n, const value_type &value) {
   if (n <= _size) {
-    // 裁剪
-    erase(begin(), begin() + n);
+    iterator last = begin();
+    for (int i = 0; i < n; i++)
+      last++;
+    erase(begin(), last);
+  } else {
+    for (int i = 0; i < n - _size; i++) {
+      list_node *tmp = construct(value);
+      insert(tmp);
+    }
   }
 }
 
@@ -383,29 +452,11 @@ void list<T, Default_allocator>::resize(size_t n) {
 template <typename T, typename Default_allocator>
 void list<T, Default_allocator>::allocate_and_fill_value(
     list_head head, size_t n, const value_type &value) {
-  if constexpr (std::is_trivially_constructible_v<value_type>()) {
-    for (size_t i = 0; i < n; i++) {
-      // 先构造node之后链接
-      list_node *new_node = construct(value);
-      // 开始插入
-      (static_cast<list_node *>(head.prev))->next = new_node;
-      new_node->prev = head.prev;
-
-      new_node->next = &head;
-      head.prev = new_node;
-      //< A <-> B <-> C <-> head >
-    }
-  } else {
+  for (size_t i = 0; i < n; i++) {
     // 先构造node之后链接
-    list_node *new_node = static_cast<list_node *>(
-        Default_allocator::allocate(sizeof(list_node)));
-    new_node->value = value;
+    list_node *new_node = construct(value);
     // 开始插入
-    (static_cast<list_node *>(head.prev))->next = new_node;
-    new_node->prev = head.prev;
-
-    new_node->next = &head;
-    head.prev = new_node;
+    insert(new_node);
     //< A <-> B <-> C <-> head >
   }
   _size += n;
@@ -416,15 +467,15 @@ template <typename T, typename Default_allocator>
 typename list<T, Default_allocator>::list_node *
 list<T, Default_allocator>::construct(const value_type &value) {
   list_node *new_node =
-      static_cast<list_node *>(Default_allocator::allocate(sizeof(list_node)));
-  new (&(new_node->value)) value_type(value);
+      static_cast<list_node *>(allocator.allocate(sizeof(list_node)));
+  new (new_node) list_node(new_node,new_node,value);
   return new_node;
 }
 
 template <typename T, typename Default_allocator>
 template <typename... Args>
 typename list<T, Default_allocator>::list_node *
-list<T, Default_allocator>::construct_in_palce(Args... args) {
+list<T, Default_allocator>::construct_in_place(Args... args) {
   list_node *new_node =
       static_cast<list_node *>(allocator.allocate(sizeof(list_node)));
   new (&new_node->value) value_type(std::forward<Args>(args)...);
@@ -435,13 +486,21 @@ void list<T, Default_allocator>::deconstruct(list_node *node) {
   if constexpr (!std::is_trivially_destructible<value_type>()) {
     node->value.~value_type();
   }
-  allocator.deallocate(static_cast<void *>(node), sizeof(value_type));
+  allocator.deallocate(static_cast<void *>(node), sizeof(list_node));
   return;
 }
 template <typename T, typename Default_allocator>
 list<T, Default_allocator>::~list() {
   clear();
-  deconstruct(&head);
+}
+
+template <typename T, typename Default_allocator>
+void list<T, Default_allocator>::insert(list_node *node) {
+  head.prev->next = node;
+  node->prev = head.prev;
+
+  node->next = &head;
+  head.prev = node;
 }
 
 }; // namespace m_stl

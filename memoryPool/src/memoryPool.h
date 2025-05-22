@@ -26,7 +26,7 @@
 #define UNLOCK(mtx)
 #endif // defined(THREAD_ON)
 
-size_t get_page_size() {
+inline size_t get_page_size() {
   static size_t page_size = 0;
   if (page_size != 0)
     return page_size; // 曾经获取过页大小
@@ -178,7 +178,7 @@ pthread_mutex_t my_malloc_allocator<uniqueID>::mtx = PTHREAD_MUTEX_INITIALIZER;
 
 template <int uniqueID>
 volatile typename my_malloc_allocator<uniqueID>::obj
-    *my_malloc_allocator<uniqueID>::free_list[FREELIST_SIZE];
+    *my_malloc_allocator<uniqueID>::free_list[FREELIST_SIZE] = {};
 #endif // DOUBLE_ALLOC_ON
 
 template <int uniqueID>

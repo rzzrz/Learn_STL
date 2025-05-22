@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/rzz-rz/Learn_STL/my_list/build",
+  "command": "/usr/bin/c++ -DGFLAGS_IS_A_DLL=0 -DGLOG_USE_GFLAGS -DGLOG_USE_GLOG_EXPORT -g -std=gnu++17 -o CMakeFiles/test1.dir/src/test.cpp.o -c /home/rzz-rz/Learn_STL/my_list/src/test.cpp",
+  "file": "/home/rzz-rz/Learn_STL/my_list/src/test.cpp",
+  "output": "CMakeFiles/test1.dir/src/test.cpp.o"
+}
+]

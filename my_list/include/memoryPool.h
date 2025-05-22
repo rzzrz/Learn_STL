@@ -26,7 +26,7 @@
 #define UNLOCK(mtx)
 #endif // defined(THREAD_ON)
 
-size_t get_page_size() {
+inline size_t get_page_size() {
   static size_t page_size = 0;
   if (page_size != 0)
     return page_size; // 曾经获取过页大小
@@ -89,14 +89,13 @@ public:
   template <typename T, typename... Args>
   static std::shared_ptr<T> make_shared_with_pool(Args... args);
 
-  template <typename T,size_t N>
+  template <typename T, size_t N>
   static std::shared_ptr<T> make_shared_with_pool();
   // 析构函数关闭内存池
 
-  private :
+private:
   // 一级的内存分配直接封装new和free进行分配
-  static void *
-  big_mem_allocate(size_t n);
+  static void *big_mem_allocate(size_t n);
 
   // 二级分配
 #if DOUBLE_ALLOC_ON // 关闭二级内存分配器
@@ -164,11 +163,11 @@ public:
 };
 
 #if DOUBLE_ALLOC_ON
-template <int uniqueID> size_t my_malloc_allocator<uniqueID>::heap_size;
-template <int uniqueID> size_t my_malloc_allocator<uniqueID>::page_size;
+template <int uniqueID> size_t my_malloc_allocator<uniqueID>::heap_size = 0;
+template <int uniqueID> size_t my_malloc_allocator<uniqueID>::page_size = 0;
 
-template <int uniqueID> char *my_malloc_allocator<uniqueID>::start_free;
-template <int uniqueID> char *my_malloc_allocator<uniqueID>::end_free;
+template <int uniqueID> char *my_malloc_allocator<uniqueID>::start_free = nullptr;
+template <int uniqueID> char *my_malloc_allocator<uniqueID>::end_free = nullptr;
 
 #if defined(THREAD_ON) && defined(_PTHREAD_H)
 
@@ -178,7 +177,7 @@ pthread_mutex_t my_malloc_allocator<uniqueID>::mtx = PTHREAD_MUTEX_INITIALIZER;
 
 template <int uniqueID>
 volatile typename my_malloc_allocator<uniqueID>::obj
-    *my_malloc_allocator<uniqueID>::free_list[FREELIST_SIZE];
+    *my_malloc_allocator<uniqueID>::free_list[FREELIST_SIZE] = {nullptr};
 #endif // DOUBLE_ALLOC_ON
 
 template <int uniqueID>
@@ -218,9 +217,9 @@ template <int uniqueID>
 template <typename T>
 std::shared_ptr<T> my_malloc_allocator<uniqueID>::make_shared_with_pool() {
   T *ptmp = (T *)my_malloc_allocator<uniqueID>::allocate(sizeof(T));
-  //new(ptmp) T();
+  // new(ptmp) T();
   return std::shared_ptr<T>(ptmp, [](T *ptr) {
-    //ptr->~T();
+    // ptr->~T();
     my_malloc_allocator<uniqueID>::deallocate((void *)ptr, sizeof(T));
   });
 }
@@ -230,8 +229,8 @@ template <typename T, typename... Args>
 std::shared_ptr<T>
 my_malloc_allocator<uniqueID>::make_shared_with_pool(Args... args) {
   T *ptmp = (T *)my_malloc_allocator<uniqueID>::allocate(sizeof(T));
-  new(ptmp) T(std::forward<Args>(args)...);
-  return std::shared_ptr<T>(ptmp, [](T* ptr) {
+  new (ptmp) T(std::forward<Args>(args)...);
+  return std::shared_ptr<T>(ptmp, [](T *ptr) {
     ptr->~T();
     my_malloc_allocator<uniqueID>::deallocate((void *)ptr, sizeof(T));
   });
@@ -253,7 +252,7 @@ std::shared_ptr<T> my_malloc_allocator<uniqueID>::make_shared_with_pool() {
   size_t size = N;
   T *ptmp = (T *)my_malloc_allocator<uniqueID>::allocate(sizeof(T) * size);
   return std::shared_ptr<T>(ptmp, [size](T *ptr) {
-    my_malloc_allocator<uniqueID>::deallocate((void*)ptr, sizeof(T) * size);
+    my_malloc_allocator<uniqueID>::deallocate((void *)ptr, sizeof(T) * size);
   });
 }
 

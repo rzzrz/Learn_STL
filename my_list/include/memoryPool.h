@@ -149,7 +149,7 @@ private:
   static size_t heap_size; // 当前管理的堆内存总量
 
   static size_t page_size;
-  char *memoryPoolPtr;
+  static char *memoryPoolPtr;
 
   static char *start_free;
   static char *end_free;
@@ -163,11 +163,14 @@ private:
 };
 
 #if DOUBLE_ALLOC_ON
-template <int uniqueID> size_t my_malloc_allocator<uniqueID>::heap_size = 0;
-template <int uniqueID> size_t my_malloc_allocator<uniqueID>::page_size = 0;
+template <int uniqueID> size_t my_malloc_allocator<uniqueID>::heap_size;
+template <int uniqueID> size_t my_malloc_allocator<uniqueID>::page_size;
 
-template <int uniqueID> char *my_malloc_allocator<uniqueID>::start_free = nullptr;
-template <int uniqueID> char *my_malloc_allocator<uniqueID>::end_free = nullptr;
+template <int uniqueID>
+char *my_malloc_allocator<uniqueID>::memoryPoolPtr = nullptr;
+
+template <int uniqueID> char *my_malloc_allocator<uniqueID>::start_free;
+template <int uniqueID> char *my_malloc_allocator<uniqueID>::end_free;
 
 #if defined(THREAD_ON) && defined(_PTHREAD_H)
 
@@ -177,7 +180,7 @@ pthread_mutex_t my_malloc_allocator<uniqueID>::mtx = PTHREAD_MUTEX_INITIALIZER;
 
 template <int uniqueID>
 volatile typename my_malloc_allocator<uniqueID>::obj
-    *my_malloc_allocator<uniqueID>::free_list[FREELIST_SIZE] = {nullptr};
+    *my_malloc_allocator<uniqueID>::free_list[FREELIST_SIZE] = {};
 #endif // DOUBLE_ALLOC_ON
 
 template <int uniqueID>

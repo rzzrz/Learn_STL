@@ -1,0 +1,5 @@
+# ninja log v5
+11	480	1748672262324466285	CMakeFiles/main.dir/src/test.cpp.o	f363ab8cada4a78e
+481	570	1748672262414466280	main	1672e4da992dcbda
+12	643	1748672262494466275	CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.o	64514cf7ed1e9113
+644	700	1748672262544466273	test_shared_ptr_with_pool	c04fb9b109345c9e

@@ -158,8 +158,10 @@ std::shared_ptr<T> my_malloc_allocator::make_shared_with_pool() {
   });
 }
 
+
 template <typename T, typename... Args>
-std::shared_ptr<T> my_malloc_allocator::make_shared_with_pool(Args... args) {
+std::shared_ptr<T>
+my_malloc_allocator::make_shared_with_pool(Args... args) {
   T *ptmp = (T *)my_malloc_allocator::allocate(sizeof(T));
   new (ptmp) T(std::forward<Args>(args)...);
   return std::shared_ptr<T>(ptmp, [](T *ptr) {
@@ -167,6 +169,9 @@ std::shared_ptr<T> my_malloc_allocator::make_shared_with_pool(Args... args) {
     my_malloc_allocator::deallocate((void *)ptr, sizeof(T));
   });
 }
+
+
+
 
 template <typename T, size_t N>
 std::shared_ptr<T> my_malloc_allocator::make_shared_with_pool() {
@@ -176,5 +181,7 @@ std::shared_ptr<T> my_malloc_allocator::make_shared_with_pool() {
     my_malloc_allocator::deallocate((void *)ptr, sizeof(T) * size);
   });
 }
+
+ 
 
 #endif // _MEMORYPOOL_H_

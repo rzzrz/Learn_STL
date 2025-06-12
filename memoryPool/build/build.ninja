@@ -11,8 +11,8 @@
 # =============================================================================
 
 # =============================================================================
-# Project: memoryPool
-# Configurations: Debug
+# Project: MemoryPool
+# Configurations: 
 # =============================================================================
 
 #############################################
@@ -20,11 +20,6 @@
 
 ninja_required_version = 1.5
 
-
-#############################################
-# Set configuration variable for custom commands.
-
-CONFIGURATION = Debug
 # =============================================================================
 # Include auxiliary files.
 
@@ -49,9 +44,15 @@ cmake_ninja_workdir = /home/rzz-rz/Learn_STL/memoryPool/build/
 
 build cmake_object_order_depends_target_main: phony || CMakeFiles/main.dir
 
-build CMakeFiles/main.dir/src/test.cpp.o: CXX_COMPILER__main_unscanned_Debug /home/rzz-rz/Learn_STL/memoryPool/src/test.cpp || cmake_object_order_depends_target_main
+build CMakeFiles/main.dir/src/test.cpp.o: CXX_COMPILER__main_unscanned_ /home/rzz-rz/Learn_STL/memoryPool/src/test.cpp || cmake_object_order_depends_target_main
   DEP_FILE = CMakeFiles/main.dir/src/test.cpp.o.d
-  FLAGS = -g -std=gnu++11
+  FLAGS = -std=gnu++17
+  OBJECT_DIR = CMakeFiles/main.dir
+  OBJECT_FILE_DIR = CMakeFiles/main.dir/src
+
+build CMakeFiles/main.dir/src/memoryPool.cpp.o: CXX_COMPILER__main_unscanned_ /home/rzz-rz/Learn_STL/memoryPool/src/memoryPool.cpp || cmake_object_order_depends_target_main
+  DEP_FILE = CMakeFiles/main.dir/src/memoryPool.cpp.o.d
+  FLAGS = -std=gnu++17
   OBJECT_DIR = CMakeFiles/main.dir
   OBJECT_FILE_DIR = CMakeFiles/main.dir/src
 
@@ -63,44 +64,12 @@ build CMakeFiles/main.dir/src/test.cpp.o: CXX_COMPILER__main_unscanned_Debug /ho
 #############################################
 # Link the executable main
 
-build main: CXX_EXECUTABLE_LINKER__main_Debug CMakeFiles/main.dir/src/test.cpp.o
-  FLAGS = -g
+build main: CXX_EXECUTABLE_LINKER__main_ CMakeFiles/main.dir/src/test.cpp.o CMakeFiles/main.dir/src/memoryPool.cpp.o
   OBJECT_DIR = CMakeFiles/main.dir
   POST_BUILD = :
   PRE_LINK = :
   TARGET_FILE = main
   TARGET_PDB = main.dbg
-
-# =============================================================================
-# Object build statements for EXECUTABLE target test_shared_ptr_with_pool
-
-
-#############################################
-# Order-only phony target for test_shared_ptr_with_pool
-
-build cmake_object_order_depends_target_test_shared_ptr_with_pool: phony || CMakeFiles/test_shared_ptr_with_pool.dir
-
-build CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.o: CXX_COMPILER__test_shared_ptr_with_pool_unscanned_Debug /home/rzz-rz/Learn_STL/memoryPool/src/shared_ptr_test.cpp || cmake_object_order_depends_target_test_shared_ptr_with_pool
-  DEP_FILE = CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.o.d
-  FLAGS = -g -std=gnu++11
-  OBJECT_DIR = CMakeFiles/test_shared_ptr_with_pool.dir
-  OBJECT_FILE_DIR = CMakeFiles/test_shared_ptr_with_pool.dir/src
-
-
-# =============================================================================
-# Link build statements for EXECUTABLE target test_shared_ptr_with_pool
-
-
-#############################################
-# Link the executable test_shared_ptr_with_pool
-
-build test_shared_ptr_with_pool: CXX_EXECUTABLE_LINKER__test_shared_ptr_with_pool_Debug CMakeFiles/test_shared_ptr_with_pool.dir/src/shared_ptr_test.cpp.o
-  FLAGS = -g
-  OBJECT_DIR = CMakeFiles/test_shared_ptr_with_pool.dir
-  POST_BUILD = :
-  PRE_LINK = :
-  TARGET_FILE = test_shared_ptr_with_pool
-  TARGET_PDB = test_shared_ptr_with_pool.dbg
 
 
 #############################################
@@ -136,7 +105,7 @@ build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 #############################################
 # Folder: /home/rzz-rz/Learn_STL/memoryPool/build
 
-build all: phony main test_shared_ptr_with_pool
+build all: phony main
 
 # =============================================================================
 # Built-in targets

@@ -1,5 +1,7 @@
 #include "../include/my_list.h" // 你的头文件路径
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 using namespace m_stl;
 
@@ -23,6 +25,7 @@ void test_basic_operations() {
   std::cout << "Elements: ";
   for (auto it = lst.begin(); it != lst.end(); ++it) {
     std::cout << *it << " ";
+    std::this_thread::sleep_for(std::chrono::seconds(1));
   }
   std::cout << "(Expected: 5 10 20)\n";
 

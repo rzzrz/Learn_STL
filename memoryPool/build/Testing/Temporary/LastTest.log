@@ -1,0 +1,19 @@
+Start testing: Jun 09 15:13 CST
+----------------------------------------------------------
+Unable to find executable: /home/rzz-rz/Learn_STL/memoryPool/build/memoryPool_test
+1/1 Testing: MemoryPoolTests
+1/1 Test: MemoryPoolTests
+Command: ""
+Directory: /home/rzz-rz/Learn_STL/memoryPool/build
+"MemoryPoolTests" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"MemoryPoolTests" end time: Jun 09 15:13 CST
+"MemoryPoolTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Jun 09 15:13 CST

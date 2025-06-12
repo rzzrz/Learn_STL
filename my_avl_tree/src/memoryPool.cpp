@@ -1,13 +1,13 @@
 #include "../include/memoryPool.h"
 #define DOUBLE_ALLOC_ON true
 #if DOUBLE_ALLOC_ON
-size_t my_malloc_allocator::heap_size;
-size_t my_malloc_allocator::page_size;
+size_t my_malloc_allocator::heap_size = 0;
+size_t my_malloc_allocator::page_size = 0;
 
 char *my_malloc_allocator::memoryPoolPtr = nullptr;
 
-char *my_malloc_allocator::start_free;
-char *my_malloc_allocator::end_free;
+char *my_malloc_allocator::start_free =nullptr;
+char *my_malloc_allocator::end_free = nullptr;
 
 #if defined(THREAD_ON) && defined(_PTHREAD_H)
 
@@ -16,7 +16,7 @@ pthread_mutex_t my_malloc_allocator::mtx = PTHREAD_MUTEX_INITIALIZER;
 
 volatile typename my_malloc_allocator::obj
     *my_malloc_allocator::free_list[FREELIST_SIZE] = {};
-#endif // DOUBLE_ALLOC_ON 
+#endif // DOUBLE_ALLOC_ON
 
 void my_malloc_allocator::initializer() {
   if (memoryPoolPtr)

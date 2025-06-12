@@ -6,15 +6,15 @@
 # It is included in the main 'build.ninja'.
 
 # =============================================================================
-# Project: MemoryPool
-# Configurations: 
+# Project: avl_tree
+# Configurations: Debug
 # =============================================================================
 # =============================================================================
 
 #############################################
 # Rule for compiling CXX files.
 
-rule CXX_COMPILER__main_unscanned_
+rule CXX_COMPILER__main_unscanned_Debug
   depfile = $DEP_FILE
   deps = gcc
   command = ${LAUNCHER}${CODE_CHECK}/usr/bin/c++ $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
@@ -24,7 +24,7 @@ rule CXX_COMPILER__main_unscanned_
 #############################################
 # Rule for linking CXX executable.
 
-rule CXX_EXECUTABLE_LINKER__main_
+rule CXX_EXECUTABLE_LINKER__main_Debug
   command = $PRE_LINK && /usr/bin/c++ $FLAGS $LINK_FLAGS $in -o $TARGET_FILE $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
   description = Linking CXX executable $TARGET_FILE
   restat = $RESTAT
@@ -42,7 +42,7 @@ rule CUSTOM_COMMAND
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = /usr/bin/cmake --regenerate-during-build -S/home/rzz-rz/Learn_STL/memoryPool -B/home/rzz-rz/Learn_STL/memoryPool/build
+  command = /usr/bin/cmake --regenerate-during-build -S/home/rzz-rz/Learn_STL/my_avl_tree -B/home/rzz-rz/Learn_STL/my_avl_tree/build
   description = Re-running CMake...
   generator = 1
 

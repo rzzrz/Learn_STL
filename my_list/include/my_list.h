@@ -111,6 +111,77 @@ public:
     list_node *now_node;
   };
 
+  class const_iterator {
+  public:
+    // 双向迭代器
+    using iterator_tag = bidirectional_iterator_tag;
+    using value_type = T;
+    using reference = const value_type &; // 改为常量引用
+    using const_reference = const value_type &;
+    using pointer = const value_type *; // 改为常量指针
+    using self = const_iterator;
+
+    friend class list;
+
+  public:
+    // 构造函数
+    const_iterator(list_node *node) : now_node(node) {}
+
+    // 从普通迭代器转换的构造函数
+    const_iterator(const iterator &other) : now_node(other.now_node) {}
+
+    // 拷贝构造函数
+    const_iterator(const self &other) = default;
+
+    // 移动构造
+    const_iterator(self &&other) noexcept = default;
+
+    // 重载运算符
+    self &operator++() {
+      now_node = now_node->next;
+      return *this;
+    }
+    self operator++(int) {
+      self tmp = *this;
+      now_node = now_node->next;
+      return tmp;
+    }
+
+    self &operator--() {
+      now_node = now_node->prev;
+      return *this;
+    }
+    self operator--(int) {
+      self tmp = *this;
+      now_node = now_node->prev;
+      return tmp;
+    }
+
+    // 返回常量引用和常量指针
+    const value_type &operator*() const { return now_node->value; }
+    const value_type *operator->() const { return &now_node->value; }
+
+    bool operator==(const self &other) const {
+      return now_node == other.now_node;
+    }
+    bool operator!=(const self &other) const {
+      return now_node != other.now_node;
+    }
+
+    self operator+(size_t n) const {
+      self tmp = *this;
+      for (size_t i = 0; i < n; ++i)
+        ++tmp;
+      return tmp;
+    }
+
+    self &operator=(const self &other) = default;
+    self &operator=(self &&other) noexcept = default;
+
+  private:
+    list_node *now_node;
+  };
+
   class reverse_iterator {
   public:
     // 双向迭代器
@@ -181,11 +252,82 @@ public:
     list_node *now_node;
   };
 
+  class const_reverse_iterator {
+  public:
+    // 双向迭代器
+    using iterator_tag = bidirectional_iterator_tag;
+    using value_type = T;
+    using reference = const value_type &;       // 改为常量引用
+    using const_reference = const value_type &; // 保持常量引用
+    using pointer = const value_type *;         // 新增常量指针类型
+    using self = const_reverse_iterator;
+
+    friend class list;
+
+  public:
+    // 构造函数
+    const_reverse_iterator(list_node *node) : now_node(node) {}
+    // 从普通反向迭代器转换
+    const_reverse_iterator(const reverse_iterator &other)
+        : now_node(other.now_node) {}
+    // 拷贝构造
+    const_reverse_iterator(const self &other) = default;
+    // 移动构造
+    const_reverse_iterator(self &&other) noexcept = default;
+
+    // 重载运算符
+    self &operator++() {
+      now_node = now_node->prev;
+      return *this;
+    }
+    self operator++(int) {
+      self tmp = *this;
+      now_node = now_node->prev;
+      return tmp;
+    }
+
+    self &operator--() {
+      now_node = now_node->next;
+      return *this;
+    }
+    self operator--(int) {
+      self tmp = *this;
+      now_node = now_node->next;
+      return tmp;
+    }
+
+    // 返回常量引用和常量指针
+    const value_type &operator*() const { return now_node->value; }
+    const value_type *operator->() const { return &now_node->value; }
+
+    bool operator==(const self &other) const {
+      return now_node == other.now_node;
+    }
+    bool operator!=(const self &other) const {
+      return now_node != other.now_node;
+    }
+
+    self operator+(size_t n) const {
+      self tmp = *this;
+      for (size_t i = 0; i < n; ++i)
+        ++tmp;
+      return tmp;
+    }
+
+    self &operator=(const self &other) = default;
+    self &operator=(self &&other) noexcept = default;
+
+  private:
+    list_node *now_node;
+  };
+
 public:
   // 别名定义
   using value_type = T;
   using iterator = list::iterator;
   using reverse_iterator = list::reverse_iterator;
+  using const_iterator = list::const_iterator;
+  using const_reverse_iterator = list::const_reverse_iterator;
   using list_head = list_node;
 
 public:
@@ -281,14 +423,14 @@ public:
   void resize(size_t n, const value_type &);
 
   iterator begin() { return iterator(head.next); }
-  const iterator cbegin() const { return iterator(head.next); }
+  const_iterator cbegin() const { return const_iterator(head.next); }
   iterator end() { return iterator(&head); }
-  const iterator cend() const { return iterator(&head); }
+  const_iterator cend() const { return const_iterator(&head); }
 
   reverse_iterator rbegin() { return reverse_iterator(head.prev); }
-  const reverse_iterator crbegin() const { return reverse_iterator(head.prev); }
+  const_reverse_iterator crbegin() const { return const_reverse_iterator(head.prev); }
   reverse_iterator rend() { return reverse_iterator(&head); }
-  const reverse_iterator crend() const { return reverse_iterator(&head); }
+  const_reverse_iterator crend() const { return const_reverse_iterator(&head); }
 
   value_type &front() {
     assert(!empty());
@@ -314,7 +456,7 @@ public:
 
 protected:
   // 申请n个空间并且使用value初始化他们
-  void allocate_and_fill_value(list_head head, size_t n,
+  void allocate_and_fill_value(list_head& head, size_t n,
                                const value_type &value);
   list_node *construct(const value_type &value);
   template <typename... Args> list_node *construct_in_place(Args... args);
@@ -332,7 +474,11 @@ void list<T, Default_allocator>::push_back(const value_type &tmp) {
 
   list_node *new_node = construct(tmp);
   try {
-    insert(new_node);
+    head.prev->next = new_node;
+    new_node->prev = head.prev;
+
+    head.prev = new_node;
+    new_node->next = &head;
     _size++;
   } catch (...) {
     deconstruct(new_node);
@@ -345,11 +491,10 @@ void list<T, Default_allocator>::push_front(const value_type &tmp) {
   list_node *new_node = construct(tmp);
 
   new_node->next = head.next;
-  new_node->prev = &head;
-
-  // 插入到哨兵node后面
   head.next->prev = new_node;
+
   head.next = new_node;
+  new_node->prev = &head;
 
   this->_size++;
 }
@@ -451,7 +596,7 @@ void list<T, Default_allocator>::resize(size_t n, const value_type &value) {
 // 申请空间并且使用value填满
 template <typename T, typename Default_allocator>
 void list<T, Default_allocator>::allocate_and_fill_value(
-    list_head head, size_t n, const value_type &value) {
+    list_head& head, size_t n, const value_type &value) {
   for (size_t i = 0; i < n; i++) {
     // 先构造node之后链接
     list_node *new_node = construct(value);

@@ -1,4 +1,4 @@
-#include "memoryPool.h"
+#include "../include/memoryPool.h"
 #include <memory>
 #include <iostream>
 #include <string>
@@ -14,7 +14,7 @@ public:
 
 int main() {
   // 初始化内存池
-  my_malloc_allocator<1> allocator;
+  my_malloc_allocator allocator;
 
 
   std::shared_ptr<int> pnum = allocator.make_shared_with_pool<int>();

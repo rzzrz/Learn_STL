@@ -1,4 +1,3 @@
 /home/rzz-rz/Learn_STL/memoryPool/build/CMakeFiles/main.dir
-/home/rzz-rz/Learn_STL/memoryPool/build/CMakeFiles/test_shared_ptr_with_pool.dir
 /home/rzz-rz/Learn_STL/memoryPool/build/CMakeFiles/edit_cache.dir
 /home/rzz-rz/Learn_STL/memoryPool/build/CMakeFiles/rebuild_cache.dir

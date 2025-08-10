@@ -4,21 +4,6 @@
 #include <memory>
 #include <utility>
 
-// 红黑树的规则
-// 每个节点要么是红色，要么是黑色
-// 根节点是黑色的
-// 每个叶子节点（NIL节点，空节点）是黑色的
-// 如果一个节点是红色的，则它的两个子节点都是黑色的
-// 对于每个节点，从该节点到其所有后代叶子节点的简单路径上，均包含相同数目的黑色节点
-
-// 插入的旋转方法
-// 默认插入的节点是红色的
-// 如果插入的是根节点 那就违反了根节点应该为黑色的规则直接转换颜色即可
-//
-// 如果插入节点的叔叔是红色的,违反了不能连续出现红色的规则,这是变换父亲和叔叔节点为黑色,
-// 并将当前节点移动至爷爷节点递归查看当前节点是否出现冲突
-//
-// 如果插入节点的叔叔是黑色,进行旋转然后变色即可
 enum Color { Red, Black };
 
 template <typename T> struct RBTreeNode {
@@ -35,7 +20,7 @@ template <typename T> struct RBTreeNode {
 
   RBTreeNode(valueType val, Color c = Red, pointer l = nullptr,
              pointer r = nullptr, pointer p = nullptr)
-      : left(l), right(r), parent(p), data(val), color(c) {};
+      : left(l), right(r), parent(p), data(val), color(c) {}
   RBTreeNode(leftValue val, Color c = Red, pointer l = nullptr,
              pointer r = nullptr, pointer p = nullptr)
       : left(l), right(r), parent(p), data(std::move(val)), color(c) {}
@@ -49,95 +34,178 @@ private:
   node_pointer root;
   node_pointer NIL;
 
-  void rightRotate(node_pointer x){
-    /*
-                   y
-                  /
-                 /
-                a
-               / \
-              /   \
-             x     ?
-            /
-           /
-          b
-    */
-    auto y = x->parent->parent;
-    auto a = x->parent;
-    auto b = a->left;
-
-    y->left->
-
-
-  }
-  void leftRotate(node_pointer x);
-  void insertFixup(node_pointer x){
-    // 因为我们开始插入的节点默认是红色的,
-    // 可能出现红色红色连续出现的情况,所以
-    // 判断是否违背不能出现两个红色的规则
-    while(x != root && x->parent->color == Color::Red){
-        // 首先判断叔叔节点是左还是右
-        if(x->parent == x->parent->parent->left){
-            // 叔叔在右边
-            node_pointer u = x->parent->parent->right;
-
-            // 1.叔叔节点是红色的
-            if(u != nullptr && u->color == Color::Red){
-                x->parent->color = Color::Black;
-                u->color = Color::Black;
-                x->parent->parent->color = Color::Red;
-                x = x->parent->parent;
-            }else{
-                // 2叔叔节点是黑色,孩子是左边的
-                if(x == x->parent->left){
-                    // ll 形
-                    rightRotate(x->parent);
-                }else{ // 3.叔叔节点是黑色,孩子在右边
-                    // lr 形状 左旋转左孩子,右旋
-                    
-                }
-            }
-        }else{
-            // 叔叔在左边
-
-        }
+  // 右旋转操作
+  // 以x为轴进行右旋转：
+  //      x               y
+  //     / \             / \
+  //    y   C    ->     A   x
+  //   / \                 / \
+  //  A   B               B   C
+  void rightRotate(node_pointer x) {
+    auto y = x->left;         // 保存x的左孩子y
+    x->left = y->right;       // 将y的右子树变为x的左子树
+    
+    if (y->right != NIL) {
+      y->right->parent = x;   // 更新B的父节点
     }
+    
+    y->parent = x->parent;    // 更新y的父节点
+    
+    // 更新祖父节点的孩子指针
+    if (x->parent == NIL) {
+      root = y;               // x是根节点的情况
+    } else if (x == x->parent->right) {
+      x->parent->right = y;
+    } else {
+      x->parent->left = y;
+    }
+    
+    y->right = x;             // 将x变为y的右孩子
+    x->parent = y;            // 更新x的父节点
+  }
+
+  // 左旋转操作
+  // 以x为轴进行左旋转：
+  //      x               y
+  //     / \             / \
+  //    A   y    ->     x   C
+  //       / \         / \
+  //      B   C       A   B
+  void leftRotate(node_pointer x) {
+    auto y = x->right;        // 保存x的右孩子y
+    x->right = y->left;       // 将y的左子树变为x的右子树
+    
+    if (y->left != NIL) {
+      y->left->parent = x;    // 更新B的父节点
+    }
+    
+    y->parent = x->parent;    // 更新y的父节点
+    
+    // 更新祖父节点的孩子指针
+    if (x->parent == NIL) {
+      root = y;               // x是根节点的情况
+    } else if (x == x->parent->left) {
+      x->parent->left = y;
+    } else {
+      x->parent->right = y;
+    }
+    
+    y->left = x;              // 将x变为y的左孩子
+    x->parent = y;            // 更新x的父节点
+  }
+
+  // 插入后修复红黑树性质
+  // 主要处理连续红色节点冲突
+  void insertFixup(node_pointer z) {
+    // 只有当父节点是红色时才需要修复
+    while (z->parent->color == Color::Red) {
+      // 父节点是祖父的左孩子
+      if (z->parent == z->parent->parent->left) {
+        auto uncle = z->parent->parent->right;  // 获取叔叔节点
+        
+        // Case 1: 叔叔是红色
+        // 解决方案: 父叔变黑，祖父变红，z上移到祖父
+        if (uncle->color == Color::Red) {
+          z->parent->color = Color::Black;
+          uncle->color = Color::Black;
+          z->parent->parent->color = Color::Red;
+          z = z->parent->parent;
+        } 
+        // Case 2/3: 叔叔是黑色
+        else {
+          // Case 2: LR形 (z是右孩子)
+          // 解决方案: 左旋父节点转为LL形
+          if (z == z->parent->right) {
+            z = z->parent;
+            leftRotate(z);
+          }
+          // Case 3: LL形 (z是左孩子)
+          // 解决方案: 父变黑，祖父变红，右旋祖父
+          z->parent->color = Color::Black;
+          z->parent->parent->color = Color::Red;
+          rightRotate(z->parent->parent);
+        }
+      } 
+      // 父节点是祖父的右孩子 (对称情况)
+      else {
+        auto uncle = z->parent->parent->left;  // 获取叔叔节点
+        
+        // Case 1: 叔叔是红色
+        if (uncle->color == Color::Red) {
+          z->parent->color = Color::Black;
+          uncle->color = Color::Black;
+          z->parent->parent->color = Color::Red;
+          z = z->parent->parent;
+        } 
+        // Case 2/3: 叔叔是黑色
+        else {
+          // Case 2: RL形 (z是左孩子)
+          if (z == z->parent->left) {
+            z = z->parent;
+            rightRotate(z);
+          }
+          // Case 3: RR形 (z是右孩子)
+          z->parent->color = Color::Black;
+          z->parent->parent->color = Color::Red;
+          leftRotate(z->parent->parent);
+        }
+      }
+    }
+    // 确保根节点始终为黑色
+    root->color = Color::Black;
   }
 
 public:
   BRTree() {
+    // 初始化NIL节点
     NIL = std::make_shared<RBTreeNode<T>>(T());
     NIL->color = Color::Black;
+    NIL->left = NIL;
+    NIL->right = NIL;
+    NIL->parent = NIL;
     root = NIL;
   }
-  void insert(value_type val) {
-    // 默认是红色的
-    node_pointer z = std::make_shared<RBTreeNode<T>>(val);
-    node_pointer y = nullptr;
-    node_pointer x = root;
 
+  // 插入新节点
+  void insert(value_type val) {
+    // 创建新节点（默认为红色）
+    node_pointer z = std::make_shared<RBTreeNode<T>>(val);
+    z->left = NIL;
+    z->right = NIL;
+    z->parent = NIL;
+    
+    node_pointer y = NIL;   // 跟踪插入位置的父节点
+    node_pointer x = root;  // 遍历指针
+
+    // 查找插入位置
     while (x != NIL) {
       y = x;
-      if (z->data > x->data) {
-        x = x->right;
-      } else {
+      if (z->data < x->data) {
         x = x->left;
-      }
-    }
-
-    if (y == NIL) {
-      // 是根节点
-      root = z;
-      root->color = Color::Black;
-    } else {
-      if (z->data > y->data) {
-        y->right = z;
       } else {
-        y->left = z;
+        x = x->right;
       }
     }
-  }
 
-  insertFixup(z);
+    // 设置新节点的父节点
+    z->parent = y;
+    
+    // 处理空树情况
+    if (y == NIL) {
+      root = z;
+    } 
+    // 插入到左子树
+    else if (z->data < y->data) {
+      y->left = z;
+    } 
+    // 插入到右子树
+    else {
+      y->right = z;
+    }
+    
+    // 修复红黑树性质
+    insertFixup(z);
+  }
 };
 #endif // MY_RB_TREE_H_
+

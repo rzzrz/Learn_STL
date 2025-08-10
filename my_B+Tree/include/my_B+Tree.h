@@ -20,8 +20,8 @@ public:
     bool is_leaf;                   // 是否为叶子节点
     int key_count;                  // 当前节点存储键的数量
     std::vector<valueType> keys;    // 存储的键
-    std::vector<NodePointer> children; // 子节点指针（仅内部节点使用）
-    NodePointer next;               // 指向下一个叶子节点（仅叶子节点使用）
+    std::vector<NodePointer> children; // 子节点指针(仅内部节点使用)
+    NodePointer next;               // 指向下一个叶子节点(仅叶子节点使用)
     NodePointer parent;             // 父节点指针
 
     /**
@@ -118,7 +118,7 @@ public:
     }
 
     /**
-     * @brief 打印B+树结构（用于调试）
+     * @brief 打印B+树结构(用于调试)
      */
     void print() const {
         if (root) {
@@ -131,7 +131,7 @@ public:
 
 private:
     NodePointer root;       // 根节点
-    NodePointer first_leaf; // 第一个叶子节点（用于遍历叶子节点）
+    NodePointer first_leaf; // 第一个叶子节点(用于遍历叶子节点)
 
     /**
      * @brief 查找键应插入的叶子节点
@@ -159,7 +159,7 @@ private:
         // 创建新叶子节点
         NodePointer new_leaf = new Node(true);
         
-        // 计算分裂位置（中间键索引）
+        // 计算分裂位置(中间键索引)
         const int split_index = order / 2;
         const int new_leaf_key_count = order - 1 - split_index;
         
@@ -177,17 +177,17 @@ private:
         leaf->next = new_leaf;
         new_leaf->parent = leaf->parent;
         
-        // 确定新键插入位置（原节点或新节点）
+        // 确定新键插入位置(原节点或新节点)
         if (key < new_leaf->keys[0]) {
             leaf->insert_into_leaf(key);
         } else {
             new_leaf->insert_into_leaf(key);
         }
         
-        // 中间键（新叶子节点的第一个键）需要提升到父节点
+        // 中间键(新叶子节点的第一个键)需要提升到父节点
         const_reference promote_key = new_leaf->keys[0];
         
-        // 如果没有父节点（即分裂根节点）
+        // 如果没有父节点(即分裂根节点)
         if (leaf->parent == nullptr) {
             create_new_root(leaf, new_leaf, promote_key);
         } else {
@@ -232,7 +232,7 @@ private:
         // 设置父节点
         new_node->parent = node->parent;
         
-        // 如果没有父节点（分裂根节点）
+        // 如果没有父节点(分裂根节点)
         if (node->parent == nullptr) {
             create_new_root(node, new_node, promote_key);
         } else {
@@ -327,7 +327,7 @@ private:
     }
 
     /**
-     * @brief 打印所有叶子节点（按顺序）
+     * @brief 打印所有叶子节点(按顺序)
      */
     void print_leaves() const {
         std::cout << "Leaf nodes: ";
